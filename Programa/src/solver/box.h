@@ -2,8 +2,7 @@
 #include <stdbool.h>
 
 struct box{
-  bool empty, aliado;
-  int direccion, value, row, col;
+  int value, row, col;
 };
 typedef struct box Box;
 

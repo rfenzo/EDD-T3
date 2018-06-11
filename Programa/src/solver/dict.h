@@ -2,7 +2,7 @@
 #include "state.h"
 
 struct dictEntry {
-    const char *key;
+    unsigned int key;
     State* value;
 };
 typedef struct dictEntry DictEntry;
@@ -14,8 +14,8 @@ struct dict {
 };
 typedef struct dict Dict;
 
-State* dictFind(Dict* dict, const char *key);
+State* dictFind(Dict* dict, unsigned int key);
 
-void dictAdd(Dict* dict, const char *key, State* value);
+void dictAdd(Dict* dict, unsigned int key, State* value);
 
 Dict* dictInit(void);

@@ -3,10 +3,12 @@
 
 struct state{
   struct state* parent;
-  Box*** tablero;
+  Box** tablero;
   Box* op;
-  char* key;
+  unsigned int key;
 };
 typedef struct state State;
 
-State* stateInit(Box*** tablero, State* parent, Box* op, unsigned int key);
+State* stateInit(Box** tablero, unsigned int key);
+
+void displayState(State* state, int width, int height);
