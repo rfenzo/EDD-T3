@@ -3,12 +3,12 @@
 
 struct state{
   struct state* parent;
-  Box** tablero;
-  Box* op;
+  int* tablero;
+  int posOp; //pos del que disparó
   unsigned int key;
 };
 typedef struct state State;
 
-State* stateInit(Box** tablero, unsigned int key);
+State* stateInit(int* tablero, unsigned int key, int size);
 
-void displayState(State* state, int width, int height);
+void displayState(State state, int width, int height);

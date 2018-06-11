@@ -5,87 +5,116 @@
 #include "state.h"
 #include "dict.h"
 #include "unistd.h"
+#include "stdbool.h"
+#include "string.h"
 
-int getPos(int col, int row, int width){
-	return row*width+col;
+int HEIGHT, WIDTH;
+
+int getPos(int col, int row){
+	return row*WIDTH+col;
 }
 
-bool compareState(State* state1, State* state2, int width, int height){
+int getRow(int pos){
+	return pos/WIDTH;
+}
+
+int getCol(int pos){
+	return pos%WIDTH;
+}
+
+void displaySolution(State* currentState){
+	int solInversa[10000];
+	//WARNING de que tamaño debe ser?
+	State* actual = currentState;
+	int i;
+	for (i = 0; actual->parent != NULL; i++) {
+		solInversa[i] = actual->posOp;
+		actual = actual->parent;
+	}
+	i--;
+	for (; i >= 0; i--) {
+		printf("%i,%i\n", getCol(solInversa[i]),getRow(solInversa[i]));
+	}
+}
+
+bool compareState(State* currentState, State* endState){
 	int pos;
-	for (int row = 0; row < height; row++) {
-		for (int col = 0; col < width; col++) {
-			pos = getPos(col,row,width);
+	for (int row = 0; row < HEIGHT; row++) {
+		for (int col = 0; col < WIDTH; col++) {
+			pos = getPos(col,row);
 			// printf("compareState\n");
-			// displayBox(state1->tablero[pos]);
-			// displayBox(state2->tablero[pos]);
+			// displayBox(currentState->tablero[pos]);
+			// displayBox(endState->tablero[pos]);
 			//aliado y (enemigo o vacio)
-			if (state1->tablero[pos]->value < 4 && state2->tablero[pos]->value >= 4) {
+			if (currentState->tablero[pos] < 4 && endState->tablero[pos] >= 4) {
 				return false;
 			}
 			//enemigo y vacio
-			if (state1->tablero[pos]->value == 4 && state2->tablero[pos]->value == 5) {
+			if (currentState->tablero[pos] == 4 && endState->tablero[pos] == 5) {
 				return false;
 			}
 		}
 	}
+	displaySolution(currentState);
 	return true;
 }
 
-Box* rotar(Box* aliado){
-	printf("Rotate %i,%i\n",aliado->col,aliado->row);
-	// printf("Antes: %i\n", aliado->value);
-	return boxInit((++aliado->value)%4,aliado->col,aliado->row);
+int rotar(int pos){
+	return (++pos)%4;
 }
 
-Box* destroy(Box* aliado){
-	printf("Destroy %i,%i\n",aliado->col,aliado->row);
-	return boxInit(5,aliado->col,aliado->row);
+int destroy(int pos){
+	return 5;
 }
 
-bool getShot(int col, int row, int width, Box** tablero){
-	int pos = getPos(col,row,width);
-	Box* box = tablero[pos];
-	if (box->value == 5) {
+bool getShot(int col, int row, int* tablero){
+	int value = tablero[getPos(col,row)];
+	if (value == 5) {
 		return false;
 	}
-	if (box->value < 4) {
-		tablero[pos] = rotar(box);
-	}else if (box->value == 4) {
-		tablero[pos] = destroy(box);
+	if (value < 4) {
+		// printf("Rotando %i,%i: %i->", col,row,value);
+		tablero[getPos(col,row)] = rotar(value);
+		// printf("%i\n", tablero[getPos(col,row)]);
+	}else if (value == 4) {
+		// printf("Eliminando %i,%i\n", col,row);
+		tablero[getPos(col,row)] = destroy(value);
 	}
 	return true;
 }
 
-State* disparar(State* current, Box* aliado, unsigned int newKey, int width, int height){
-	printf("Dispara %i,%i, direccion %i\n",aliado->col,aliado->row, aliado->value);
+State* disparar(State* current, int posAliado, unsigned int newKey){
+	int alCol = getCol(posAliado);
+	int alRow = getRow(posAliado);
+	int alValue = current->tablero[posAliado];
+	// printf("Dispara %i,%i en direccion %i\n",alCol,alRow,alValue);
 	// sleep(1);
-	// displayBox(aliado);
-	State* new = stateInit(current->tablero, newKey);
-	if (aliado->value == 0 && aliado->col-1 >= 0) {
+	State* new = stateInit(current->tablero, newKey,HEIGHT*WIDTH);
+	if (alValue == 0 && alCol-1 >= 0) {
 		// revisar hacia arriba
-		for (int i = aliado->row-1; i >= 0; i--) {
-			if (getShot(aliado->col, i, width, new->tablero)){
+		for (int i = alRow-1; i >= 0; i--) {
+			if (getShot(alCol, i, new->tablero)){
 				break;
 			}
 		}
-	}else if (aliado->value == 1 && aliado->col+1 < width) {
+	}else if (alValue == 1 && alCol+1 < WIDTH) {
 		// revisar hacia la derecha
-		for (int i = aliado->col+1; i < width; i++) {
-			if (getShot(i, aliado->row ,width, new->tablero)){
+		for (int i = alCol+1; i < WIDTH; i++) {
+			if (getShot(i, alRow, new->tablero)){
 				break;
 			}
 		}
-	}else if (aliado->value == 2 && aliado->row+1 < height) {
+	}else if (alValue == 2 && alRow+1 < HEIGHT) {
 		// revisar hacia abajo
-		for (int i = aliado->row+1; i < height; i++) {
-			if (getShot(aliado->col,i,width, new->tablero)){
+		for (int i = alRow+1; i < HEIGHT; i++) {
+			if (getShot(alCol,i, new->tablero)){
 				break;
 			}
 		}
-	}else if (aliado->value == 3 && aliado->row-1 >= 0) {
+	}else if (alValue == 3 && alRow-1 >= 0) {
 		// revisar hacia la izquierda
-		for (int i = aliado->col-1; i >= 0; i--) {
-			if (getShot(i,aliado->row,width, new->tablero)){
+		for (int i = alCol-1; i >= 0; i--) {
+			if (getShot(i,alRow, new->tablero)){
 				break;
 			}
 		}
@@ -93,7 +122,7 @@ State* disparar(State* current, Box* aliado, unsigned int newKey, int width, int
 	return new;
 }
 
-bool BFS(State* current, State* end, Box** aliados, int aliadosCount, int width, int height){
+bool BFS(State* current, State* end, int* aliados, int aliadosCount){
 	State* open[10000]; //de que tamaño?
 	//Dict* stored = dictInit();
 	State* new;
@@ -102,16 +131,15 @@ bool BFS(State* current, State* end, Box** aliados, int aliadosCount, int width,
 	int opened = 0;
 	open[openCount++] = current; //dictAdd(stored, current->key, current);
 	while (openCount != opened){
-		sleep(1);
+		// sleep(1);
 		// printf("openCount %i, opened %i\n", openCount, opened);
 		current = open[opened++];
-		displayState(current, width, height);
+		// displayState(*current, WIDTH, HEIGHT);
 		for (int a = 0; a < aliadosCount; a++) {
-			printf("a: %i\n", a);
-			new = disparar(current, aliados[a], newKey++, width, height);
+			new = disparar(current, aliados[a], newKey++);
 			//if (dictFind(stored, new->key)) continue;
-			new->parent = current; new->op = aliados[a];
-			if (compareState(new, end, width, height)) return true;
+			new->parent = current; new->posOp = aliados[a];
+			if (compareState(new, end)) return true;
 			open[openCount++] = new; //dictAdd(stored, new->key, new);
 		}
 	}
@@ -124,42 +152,36 @@ int main(int argc, char** argv){
 		printf("Modo de uso: ./solver test.txt\n");
 		return 0;
 	}
-	//WARNING (columna,fila)  aumenta desde esquina superior izq
-
-	int height, width, value;
 	FILE* input_file = fopen((char *)argv[1],"r");
 	if (!input_file) {
 		printf("Error al abrir el archivo\n");
 		return 1;
 	}
-	fscanf(input_file, "%d %d", &width, &height);
+	fscanf(input_file, "%d %d", &WIDTH, &HEIGHT);
 
-	Box** initial = malloc(width*height*sizeof(Box));
-	Box** end = malloc(width*height*sizeof(Box));
-	Box** aliados = malloc(width*height*sizeof(Box)); // más memoria de la necesaria pero filo
+	int* initial = malloc(WIDTH*HEIGHT*sizeof(int));
+	int* end = malloc(WIDTH*HEIGHT*sizeof(int));
+	int* aliados = malloc(WIDTH*HEIGHT*sizeof(int)); // position of allys
 	int aliadosCount = 0;
 
-	for (int row = 0; row < height; row++) {
-		for (int col = 0; col < width; col++) {
+	int value;
+	for (int row = 0; row < HEIGHT; row++) {
+		for (int col = 0; col < WIDTH; col++) {
 			fscanf(input_file, "%d", &value);
-			initial[getPos(col,row,width)] = boxInit(value, col, row);
+			initial[getPos(col,row)] = value;
 			if (value < 4) {
-				// printf("Pos de aliado %i \n", getPos(col,row,width));
-				aliados[aliadosCount] = initial[getPos(col,row,width)];
+				aliados[aliadosCount] = getPos(col,row);
 				aliadosCount++;
 			}
 			if (value == 4) {
-				end[getPos(col,row,width)] = boxInit(5, col, row);
+				end[getPos(col,row)] = 5;
 			}else{
-				end[getPos(col,row,width)] = boxInit(value, col, row);
+				end[getPos(col,row)] = value;
 			}
 		}
 	}
-	BFS(stateInit(initial,0), stateInit(end,1), aliados,
-	 aliadosCount, width, height);
 
-	//display solution
-
+	BFS(stateInit(initial,0,HEIGHT*WIDTH), stateInit(end,1,HEIGHT*WIDTH), aliados, aliadosCount);
 
 	return 0;
 }

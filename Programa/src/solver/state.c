@@ -2,6 +2,7 @@
 #include "box.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include "string.h"
 
 char* intToChars(unsigned int numero) {
   char* result = calloc(4,1);
@@ -22,18 +23,21 @@ char* intToChars(unsigned int numero) {
   return result;
 }
 
-State* stateInit(Box** tablero,  unsigned int key){
+State* stateInit(int* tablero,  unsigned int key, int size){
   State* state = malloc(sizeof(State));
-  state->tablero = tablero;
+  state->tablero = malloc(size*sizeof(int));
+  memcpy(state->tablero,tablero,size*sizeof(int));
   state->key = key;
+  // state->parent = malloc(sizeof(State));
+  state->parent = NULL;
   // state->key = intToChars(key);
   return state;
 }
 
-void displayState(State* state, int width, int height){
+void displayState(State state, int width, int height){
   for (int row = 0; row < height; row++) {
     for (int col = 0; col < width; col++) {
-      printf("|%i|", state->tablero[row*width+col]->value);
+      printf("|%i|", state.tablero[row*width+col]);
       // displayBox(state->tablero[row*width+col]);
     }
     printf("\n");
