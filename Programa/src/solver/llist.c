@@ -3,21 +3,23 @@
 #include <string.h>
 #include <stdio.h>
 
-Node* node_init(int* value){
+Node* nodeInit(int* value, int size){
   Node* node = malloc(sizeof(Node));
-  node -> value = value;
+  node->value = malloc(size);
+  memcpy(node->value, value, size);
   node -> next = NULL;
   return node;
 }
 
-void recursive_destroy(Node* node){
+void recursiveDestroy(Node* node){
   if (node -> next){
-    recursive_destroy(node -> next);
+    recursiveDestroy(node -> next);
   }
+  free(node->value);
   free(node);
 }
 
-LinkedList* linkedlist_init(){
+LinkedList* linkedlistInit(){
   LinkedList* list = malloc(sizeof(LinkedList));
   list -> count = 0;
   list -> first = NULL;
@@ -25,8 +27,8 @@ LinkedList* linkedlist_init(){
   return list;
 }
 
-void linkedlist_append(LinkedList* list, int* value){
-  Node* node = node_init(value);
+void linkedlistAppend(LinkedList* list, int* value, int size){
+  Node* node = nodeInit(value, size);
   if (list -> count == 0){
     list -> first = node;
   }else{
@@ -36,7 +38,7 @@ void linkedlist_append(LinkedList* list, int* value){
   list -> count++;
 }
 
-bool linkedlist_exists(LinkedList* list, int* value, int size){
+bool linkedlistExists(LinkedList* list, int* value, int size){
   Node* actual = list -> first;
   for (int i = 0; i < list->count; i++){
     if (memcmp(actual->value, value, size) == 0) {
@@ -47,23 +49,42 @@ bool linkedlist_exists(LinkedList* list, int* value, int size){
   return false;
 }
 
-void dictAdd(LinkedList** dict, int* value, unsigned long position){
+void dictAdd(LinkedList** dict, int* value, unsigned long position, int size){
   if (dict[position] == NULL) {
-    dict[position] = linkedlist_init();
+    dict[position] = linkedlistInit();
   }
-  linkedlist_append(dict[position], value);
+  linkedlistAppend(dict[position], value, size);
 }
 
 bool inDict(LinkedList** dict, int* value, unsigned long position, int size){
   LinkedList* list = dict[position];
   if (list == NULL) {
-    list = linkedlist_init();
+    dict[position] = linkedlistInit();
     return false;
   }
-  return linkedlist_exists(list, value, size);
+  return linkedlistExists(list, value, size);
 }
 
-void linkedlist_destroy(LinkedList* list){
-  recursive_destroy(list -> first);
+LinkedList** dictInit(int DICTSIZE){
+  LinkedList** dict = malloc(sizeof(LinkedList)*DICTSIZE);
+  for (int i = 0; i < DICTSIZE; i++) {
+    dict[i] = NULL;
+  }
+  return dict;
+}
+
+void linkedlistDestroy(LinkedList* list){
+  if (list -> first != NULL) {
+    recursiveDestroy(list -> first);
+  }
   free(list);
+}
+
+void dictDestroy(LinkedList** dict, int DICTSIZE){
+  for (int i = 0; i < DICTSIZE; i++) {
+    if (dict[i] != NULL){
+      linkedlistDestroy(dict[i]);
+    }
+  }
+  free(dict);
 }

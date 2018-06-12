@@ -14,14 +14,10 @@ struct linked_list{
 };
 typedef struct linked_list LinkedList;
 
-LinkedList* linkedlist_init();
+LinkedList** dictInit(int DICTSIZE);
 
-void linkedlist_append(LinkedList* list, int* value);
-
-bool linkedlist_exists(LinkedList* list, int* value, int size);
-
-void linkedlist_destroy(LinkedList* list);
-
-void dictAdd(LinkedList** dict, int* value, unsigned long position);
+void dictAdd(LinkedList** dict, int* value, unsigned long position, int size);
 
 bool inDict(LinkedList** dict, int* value, unsigned long position, int size);
+
+void dictDestroy(LinkedList** dict, int DICTSIZE);

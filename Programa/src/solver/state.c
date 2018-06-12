@@ -23,3 +23,8 @@ State* stateInit(int* tablero, int len){
   state->parent = NULL;
   return state;
 }
+
+void stateDestroy(State* state){
+  free(state->tablero);
+  free(state);
+}

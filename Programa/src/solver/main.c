@@ -8,10 +8,13 @@
 #include "string.h"
 
 #define DICTSIZE 10000000
+#define STATESSIZE 1000000
 
 int HEIGHT, WIDTH;
 uint64_t* zobristTable;
 LinkedList** dict;
+State** states;
+int statesCount;
 
 int getPos(int col, int row){
 	return row*WIDTH+col;
@@ -25,7 +28,7 @@ int getCol(int pos){
 	return pos%WIDTH;
 }
 
-void initZobrist(){
+void zobristInit(){
 	zobristTable = malloc(sizeof(uint64_t)*5*WIDTH*HEIGHT);
 	for (int i = 0; i < WIDTH*HEIGHT; i++) {
 		for (int j = 0; j < 5; j++) {
@@ -33,6 +36,7 @@ void initZobrist(){
 		}
 	}
 }
+
 
 uint64_t hash(int* tablero){
 	uint64_t h = 0;
@@ -115,31 +119,35 @@ bool checkEndStatus(State* end){
 		}
 	}
 	displaySolution(end);
-	// displayState(*end, WIDTH, HEIGHT);
 	return true;
 }
 
 bool BFS(State* current, int* aliados, int aliadosCount){
-	State* states[1000000];
-	dict = malloc(sizeof(LinkedList)*DICTSIZE);
-	initZobrist();
+	states = malloc(STATESSIZE*sizeof(State));
+	dict = dictInit(DICTSIZE);
+	zobristInit();
 	State* new;
-	int statesCount = 0;
+	statesCount = 0;
 	int opened = 0;
 	states[statesCount++] = current;
-	dictAdd(dict, current->tablero, hash(current->tablero));
+	dictAdd(dict, current->tablero, hash(current->tablero),HEIGHT*WIDTH);
 	while (statesCount > opened){
 		current = states[opened++];
 		for (int a = 0; a < aliadosCount; a++) {
 			new = disparar(current, aliados[a]);
 			unsigned long hashNumber = hash(new->tablero);
 			if (inDict(dict, new->tablero, hashNumber, HEIGHT*WIDTH)){
+				stateDestroy(new);
 				continue;
 			}
 			new->parent = current; new->posOp = aliados[a];
-			if (checkEndStatus(new)) return true;
+			if (checkEndStatus(new)){
+				stateDestroy(new);
+				// printf("Numero de estados %i\n", statesCount);
+				return true;
+			}
 			states[statesCount++] = new;
-			dictAdd(dict, new->tablero, hashNumber);
+			dictAdd(dict, new->tablero, hashNumber, HEIGHT*WIDTH);
 		}
 	}
 	return false;
@@ -158,7 +166,7 @@ int main(int argc, char** argv){
 	fscanf(input_file, "%d %d", &HEIGHT, &WIDTH);
 
 	int* initial = malloc(WIDTH*HEIGHT*sizeof(int));
-	int* aliados = malloc(WIDTH*HEIGHT*sizeof(int)); // position of allys
+	int* aliados = malloc(WIDTH*HEIGHT*sizeof(int));
 	int aliadosCount = 0;
 
 	int value;
@@ -172,8 +180,17 @@ int main(int argc, char** argv){
 			}
 		}
 	}
+	fclose(input_file);
 
 	BFS(stateInit(initial,HEIGHT*WIDTH), aliados, aliadosCount);
 
+	free(initial);
+	free(aliados);
+	free(zobristTable);
+	dictDestroy(dict, DICTSIZE);
+	for (int i = 0; i < statesCount; i++) {
+		stateDestroy(states[i]);
+	}
+	free(states);
 	return 0;
 }
